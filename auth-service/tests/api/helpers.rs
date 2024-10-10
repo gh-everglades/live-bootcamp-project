@@ -18,7 +18,8 @@ impl TestApp {
         #[allow(clippy::let_underscore_future)]
         let _ = tokio::spawn(app.run());
 
-        let http_client = todo!(); // Create a Reqwest http client instance
+        //let http_client = todo!(); // Create a Reqwest http client instance
+        let http_client = reqwest::Client::new();
 
         // Create new `TestApp` instance and return it
         TestApp { address, http_client }
