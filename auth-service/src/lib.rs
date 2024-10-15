@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use tower_http::services::ServeDir;
 use app_state::AppState;
 
+
 pub mod routes;
 pub mod domain;
 pub mod services;
@@ -54,11 +55,10 @@ impl Application {
 pub mod app_state {
     use std::sync::Arc;
     use tokio::sync::RwLock;
-
-    use crate::services::hashmap_user_store::HashmapUserStore;
+    use crate::domain::UserStore;
 
     // Using a type alias to improve readability!
-    pub type UserStoreType = Arc<RwLock<HashmapUserStore>>;
+    pub type UserStoreType = Arc<RwLock<dyn UserStore + Send + Sync>>;
 
     #[derive(Clone)]
     pub struct AppState {

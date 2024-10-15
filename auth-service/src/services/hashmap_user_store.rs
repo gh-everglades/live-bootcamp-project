@@ -1,14 +1,8 @@
 use std::collections::HashMap;
 
-use crate::domain::User;
+use crate::domain::{User, UserStore, UserStoreError};
 
-#[derive(Debug, PartialEq)]
-pub enum UserStoreError {
-    UserAlreadyExists,
-    UserNotFound,
-    InvalidCredentials,
-    UnexpectedError,
-}
+
 
 // TODO: Create a new struct called `HashmapUserStore` containing a `users` field
 // which stores a `HashMap`` of email `String`s mapped to `User` objects.
@@ -17,9 +11,9 @@ pub enum UserStoreError {
 pub struct HashmapUserStore {
     pub users: HashMap<String, User>,
 }
-
-impl HashmapUserStore {
-    pub fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
+#[async_trait::async_trait]
+impl UserStore for HashmapUserStore {
+    async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
         // Return `UserStoreError::UserAlreadyExists` if the user already exists,
         // otherwise insert the user into the hashmap and return `Ok(())`.
         if self.users.contains_key(&user.email) {
@@ -34,7 +28,7 @@ impl HashmapUserStore {
     // This function should return a `Result` type containing either a
     // `User` object or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
-    pub fn get_user(&self, email: &str) -> Result<&User, UserStoreError> {
+    async fn get_user(&self, email: &str) -> Result<&User, UserStoreError> {
         self.users.get(email).ok_or(UserStoreError::UserNotFound)
     }
 
@@ -44,7 +38,7 @@ impl HashmapUserStore {
     // unit type `()` if the email/password passed in match an existing user, or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
     // Return `UserStoreError::InvalidCredentials` if the password is incorrect.
-    pub fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
+    async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
         if let Some(user) = self.users.get(email) {
             if user.password == password {
                 Ok(())
@@ -67,7 +61,7 @@ mod tests {
     async fn test_add_user() {
         let mut store = HashmapUserStore::default();
         let user = User::new("test@example.com".to_string(), "password123".to_string(), true);
-        assert_eq!(store.add_user(user), Ok(()));
+        assert_eq!(store.add_user(user).await, Ok(()));
         assert!(store.users.contains_key(&"test@example.com".to_string()));
     }
 
@@ -75,18 +69,18 @@ mod tests {
     async fn test_get_user() {
         let mut store = HashmapUserStore::default();
         let user = User::new("test@example.com".to_string(), "password123".to_string(), true);
-        store.add_user(user.clone()).unwrap();
-        assert_eq!(store.get_user("test@example.com"), Ok(&user));
-        assert_eq!(store.get_user("invalid_email"), Err(UserStoreError::UserNotFound));
+        store.add_user(user.clone()).await.unwrap();
+        assert_eq!(store.get_user("test@example.com").await, Ok(&user));
+        assert_eq!(store.get_user("invalid_email").await, Err(UserStoreError::UserNotFound));
     }
 
     #[tokio::test]
     async fn test_validate_user() {
         let mut store = HashmapUserStore::default();
         let user = User::new("test@example.com".to_string(), "password123".to_string(), true);
-        store.add_user(user).unwrap();
-        assert_eq!(store.validate_user("test@example.com", "password123"), Ok(()));
-        assert_eq!(store.validate_user("test@example.com", "wrong_password"), Err(UserStoreError::InvalidCredentials));
-        assert_eq!(store.validate_user("invalid_email", "password123"), Err(UserStoreError::UserNotFound));
+        store.add_user(user).await.unwrap();
+        assert_eq!(store.validate_user("test@example.com", "password123").await, Ok(()));
+        assert_eq!(store.validate_user("test@example.com", "wrong_password").await, Err(UserStoreError::InvalidCredentials));
+        assert_eq!(store.validate_user("invalid_email", "password123").await, Err(UserStoreError::UserNotFound));
     }
 }

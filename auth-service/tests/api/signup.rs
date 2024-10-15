@@ -124,8 +124,8 @@ async fn should_return_409_if_email_already_exists() {
         })
     ;
 
-    let response = app.post_signup(&test_case).await; 
-    let response = app.post_signup(&test_case).await; 
+    let _response = app.post_signup(&test_case).await; 
+    let response = app.post_signup(&test_case).await; // call method again with the same email
 
     assert_eq!(response.status().as_u16(), 409);
 
