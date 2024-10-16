@@ -1,5 +1,4 @@
 use std::sync::Arc;
-
 use auth_service::services::HashmapUserStore;
 use auth_service::Application;
 use auth_service::app_state::{AppState, UserStoreType};
