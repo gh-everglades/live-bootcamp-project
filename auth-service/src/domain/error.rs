@@ -6,6 +6,8 @@ pub enum AuthAPIError {
     InvalidCredentials,
     UnexpectedError,
     IncorrectCredentials,
+    MissingToken,
+    InvalidToken,
 }
 
 impl From<UserStoreError> for AuthAPIError {
