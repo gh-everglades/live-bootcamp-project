@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
 use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
 use reqwest::Url;
 use crate::helpers::{get_random_email, TestApp};
+
 
 #[tokio::test]
 async fn should_return_200_if_valid_jwt_cookie() {
@@ -36,6 +39,15 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
     let logout_response = app.logout().await;
     assert_eq!(logout_response.status().as_u16(), 200);
+
+    let is_banned = app.banned_token_store
+            .read()
+            .await
+            .check_token(auth_cookie.value().to_string())
+            .await
+            .unwrap();
+
+    assert!(is_banned);
 }
 
 #[tokio::test]
