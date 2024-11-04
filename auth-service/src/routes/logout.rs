@@ -1,8 +1,8 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse};
-use axum_extra::extract::{cookie, CookieJar};
+use axum_extra::extract::{CookieJar};
 
 use crate::{
-    app_state::{AppState, BannedTokenStoreType}, domain::AuthAPIError, utils::{auth::validate_token, constants::JWT_COOKIE_NAME}
+    app_state::{AppState}, domain::AuthAPIError, utils::{auth::validate_token, constants::JWT_COOKIE_NAME}
 };
 
 pub async fn logout(

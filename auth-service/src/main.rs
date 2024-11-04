@@ -1,9 +1,6 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use auth_service::{
-    Application, 
-    app_state::{AppState, UserStoreType},
-    services::{HashmapUserStore, HashsetBannedTokenStore},
-    utils::constants::prod
+    app_state::{AppState, EmailClientType, TwoFACodeStoreType, UserStoreType}, domain::{mock_email_client::MockEmailClient, EmailClient}, services::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore}, utils::constants::prod, Application
 };
 use tokio::sync::RwLock;
 
@@ -11,7 +8,9 @@ use tokio::sync::RwLock;
 async fn main() {
     let user_store: UserStoreType = Arc::new(RwLock::new(HashmapUserStore::default()));
     let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
-    let app_state = AppState::new(user_store, banned_token_store);
+    let two_factor_code_store: TwoFACodeStoreType  = Arc::new(RwLock::new(HashmapTwoFACodeStore::default())); 
+    let email_client: EmailClientType = Arc::new(RwLock::new(MockEmailClient));
+    let app_state = AppState::new(user_store, banned_token_store, two_factor_code_store, email_client);
 
     let app = Application::build(app_state, prod::APP_ADDRESS)
         .await

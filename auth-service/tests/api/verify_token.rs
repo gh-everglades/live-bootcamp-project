@@ -73,7 +73,7 @@ async fn should_return_401_if_banned_token() {
 
     let token = auth_cookie.value();
 
-    let response = app.logout().await;
+    let response = app.post_logout().await;
 
     assert_eq!(response.status().as_u16(), 200);
 
@@ -114,7 +114,7 @@ async fn should_return_401_if_invalid_token() {
             .cookies()
             .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
             .expect("No auth cookie found");
-    let token = auth_cookie.value();
+    let _token = auth_cookie.value();
     let verify_body = serde_json::json!({
         "token": "invalid_token"
     });

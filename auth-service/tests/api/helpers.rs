@@ -1,4 +1,4 @@
-use auth_service::{app_state::BannedTokenStoreType, utils::constants::test, Application};
+use auth_service::{app_state::{BannedTokenStoreType, EmailClientType, TwoFACodeStoreType}, domain::mock_email_client::MockEmailClient, services::HashmapTwoFACodeStore, utils::constants::test, Application};
 use uuid::Uuid;
 use auth_service::app_state::{AppState, UserStoreType};
 use tokio::sync::RwLock;
@@ -9,15 +9,24 @@ use reqwest::cookie::Jar;
 pub struct TestApp {
     pub address: String,
     pub cookie_jar: Arc<Jar>, // New!
-    pub http_client: reqwest::Client,
     pub banned_token_store: BannedTokenStoreType, // New!
+    pub two_fa_code_store: TwoFACodeStoreType, // New!
+    pub http_client: reqwest::Client,
+    
 }
 
 impl TestApp {
     pub async fn new() -> Self {
         let user_store: UserStoreType = Arc::new(RwLock::new(HashmapUserStore::default()));
         let banned_token_store: BannedTokenStoreType = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
-        let app_state = AppState::new(user_store, banned_token_store.clone());
+        let two_fa_code_store: TwoFACodeStoreType = Arc::new(RwLock::new(HashmapTwoFACodeStore::default())); // New!
+        let email_client: EmailClientType = Arc::new(RwLock::new(MockEmailClient));
+        let app_state = AppState::new(
+                    user_store,
+                    banned_token_store.clone(),
+                    two_fa_code_store.clone(),
+                    email_client.clone()
+        );
 
         let app = Application::build(app_state, test::APP_ADDRESS)
             .await
@@ -42,8 +51,9 @@ impl TestApp {
         Self {
             address,
             cookie_jar,
-            http_client,
             banned_token_store,
+            two_fa_code_store,
+            http_client,
         }
     }
 
@@ -81,7 +91,7 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn logout(&self) -> reqwest::Response {
+    pub async fn post_logout(&self) -> reqwest::Response {
         self.http_client
            .post(&format!("{}/logout", &self.address))
            .send()
@@ -89,7 +99,7 @@ impl TestApp {
            .expect("Failed to execute request.")
     }
 
-    pub async fn verify_2fa(&self, code: &str) -> reqwest::Response {
+    pub async fn post_verify_2fa(&self, code: &str) -> reqwest::Response {
         self.http_client
            .post(&format!("{}/verify-2fa", &self.address))
            .json(&serde_json::json!({ "code": code }))
