@@ -1,6 +1,6 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::{cookie::Cookie, CookieJar};
-use rand::Rng;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -94,7 +94,7 @@ async fn handle_2fa(
         return (jar, Err(AuthAPIError::UnexpectedError));
     }
 
-    // TODO: send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
+    // send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
 
     let email_client = state.email_client.read().await;
     let send_result = email_client.

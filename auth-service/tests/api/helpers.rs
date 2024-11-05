@@ -8,9 +8,9 @@ use reqwest::cookie::Jar;
 
 pub struct TestApp {
     pub address: String,
-    pub cookie_jar: Arc<Jar>, // New!
-    pub banned_token_store: BannedTokenStoreType, // New!
-    pub two_fa_code_store: TwoFACodeStoreType, // New!
+    pub cookie_jar: Arc<Jar>,
+    pub banned_token_store: BannedTokenStoreType,
+    pub two_fa_code_store: TwoFACodeStoreType,
     pub http_client: reqwest::Client,
     
 }
@@ -45,8 +45,6 @@ impl TestApp {
             .cookie_provider(cookie_jar.clone())
             .build()
             .unwrap();
-
-        // Create new `TestApp` instance and return it
 
         Self {
             address,
@@ -99,13 +97,16 @@ impl TestApp {
            .expect("Failed to execute request.")
     }
 
-    pub async fn post_verify_2fa(&self, code: &str) -> reqwest::Response {
+    pub async fn post_verify_2fa<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
         self.http_client
-           .post(&format!("{}/verify-2fa", &self.address))
-           .json(&serde_json::json!({ "code": code }))
-           .send()
-           .await
-           .expect("Failed to execute request.")
+            .post(format!("{}/verify-2fa", &self.address))
+            .json(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
     }
 
     pub async fn post_verify_token<Body>(&self, body: &Body) -> reqwest::Response

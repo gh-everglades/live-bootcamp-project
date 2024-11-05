@@ -89,6 +89,11 @@ impl TwoFACode {
         if code_len!= 6 {
             return Err("Invalid 2FA code length".to_string());
         }
+        // Ensure `code` contains only digits
+        if!code.chars().all(|c| c.is_digit(10)) {
+            return Err("Invalid 2FA code contains non-digit characters".to_string());
+        }
+        // Return the parsed TwoFACode instance if validation passes
         Ok(Self(code))
     }
 }
