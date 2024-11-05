@@ -32,7 +32,9 @@ impl Application {
     pub async fn build(app_state: AppState, address: &str) -> Result<Self, Box<dyn Error>> {
         // Allow the app service(running on our local machine and in production) to call the auth service
         let allowed_origins = [
+            "http://localhost:3000".parse()?,
             "http://localhost:8000".parse()?,
+            "http://147.182.215.185:3000".parse()?,
             "http://147.182.215.185:8000".parse()?,
         ];
 
