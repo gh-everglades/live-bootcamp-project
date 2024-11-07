@@ -19,6 +19,7 @@ fn set_token() -> String {
 
 pub mod env {
     pub const JWT_SECRET_ENV_VAR: &str = "JWT_SECRET";
+    pub const DATABASE_URL: &str = "DATABASE_URL";
 }
 
 pub const JWT_COOKIE_NAME: &str = "jwt";
