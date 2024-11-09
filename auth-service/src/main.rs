@@ -1,6 +1,9 @@
 use std::sync::Arc;
 use auth_service::{
-    app_state::{AppState, EmailClientType, TwoFACodeStoreType, UserStoreType}, domain::mock_email_client::MockEmailClient, get_postgres_pool, services::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore}, utils::constants::{env::DATABASE_URL, prod}, Application
+    app_state::{AppState, EmailClientType, TwoFACodeStoreType, UserStoreType},
+    domain::mock_email_client::MockEmailClient, get_postgres_pool, 
+    services::data_stores::{HashmapTwoFACodeStore, HashsetBannedTokenStore, PostgresUserStore}, 
+    utils::constants::{prod, DATABASE_URL}, Application
 };
 use sqlx::PgPool;
 use tokio::sync::RwLock;
@@ -10,7 +13,9 @@ async fn main() {
     // We will use this PostgreSQL pool in the next task! 
     let pg_pool = configure_postgresql().await;
 
-    let user_store: UserStoreType = Arc::new(RwLock::new(HashmapUserStore::default()));
+    //let user_store: UserStoreType = Arc::new(RwLock::new(HashmapUserStore::default()));
+    let user_store: UserStoreType = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
+    
     let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
     let two_factor_code_store: TwoFACodeStoreType  = Arc::new(RwLock::new(HashmapTwoFACodeStore::default())); 
     let email_client: EmailClientType = Arc::new(RwLock::new(MockEmailClient));

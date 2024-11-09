@@ -25,8 +25,11 @@ impl UserStore for HashmapUserStore {
     // This function should return a `Result` type containing either a
     // `User` object or a `UserStoreError`.
     // Return `UserStoreError::UserNotFound` if the user can not be found.
-    async fn get_user(&self, email: Email) -> Result<&User, UserStoreError> {
-        self.users.get(&email).ok_or(UserStoreError::UserNotFound)
+    async fn get_user(&self, email: Email) -> Result<User, UserStoreError> {
+        match self.users.get(&email) {
+            Some(u) => Ok(u.to_owned()),
+            None => Err(UserStoreError::UserNotFound)
+        }
     }
 
     // Implement a public method called `validate_user`, which takes an
@@ -71,7 +74,7 @@ mod tests {
         let password = Password::parse("password123".to_string()).unwrap();
         let user = User::new(email.clone(), password, true);
         store.add_user(user.clone()).await.unwrap();
-        assert_eq!(store.get_user(email.clone()).await, Ok(&user));
+        assert_eq!(store.get_user(email.clone()).await, Ok(user));
     }
 
     #[tokio::test]
