@@ -1,16 +1,31 @@
 {
-    // Verwendet IntelliSense zum Ermitteln möglicher Attribute.
-    // Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
-    // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug",
-            "program": "${workspaceFolder}/<executable file>",
+
+            "name": "Debug auth-service",
+            "program": "${workspaceRoot}/auth-service/target/debug/auth-service",
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}/auth-service"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug auth-service tests",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--manifest-path", "${workspaceFolder}/auth-service/Cargo.toml",
+
+                ],
+                
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}/auth-service",
         }
     ]
 }

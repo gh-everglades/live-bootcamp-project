@@ -1,10 +1,10 @@
 use auth_service::{
     app_state::{BannedTokenStoreType, EmailClientType, TwoFACodeStoreType}, domain::mock_email_client::MockEmailClient, get_postgres_pool, services::data_stores::{HashmapTwoFACodeStore, PostgresUserStore}, utils::constants::{test, DATABASE_URL}, Application};
-use sqlx::{postgres::PgPoolOptions, Executor, PgPool};
+use sqlx::{postgres::{PgConnectOptions, PgPoolOptions}, Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use auth_service::app_state::AppState;
 use tokio::sync::RwLock;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 use auth_service::services::data_stores::HashsetBannedTokenStore;
 use reqwest::cookie::Jar;
 
@@ -133,6 +133,7 @@ async fn configure_postgresql() -> PgPool {
 
     // We are creating a new database for each test case, and we need to ensure each database has a unique name!
     let db_name = Uuid::new_v4().to_string();
+    println!("Creating database: {}", db_name);
 
     configure_database(&postgresql_conn_url, &db_name).await;
 
@@ -175,4 +176,38 @@ async fn configure_database(db_conn_string: &str, db_name: &str) {
 
 pub fn get_random_email() -> String {
     format!("{}@example.com", Uuid::new_v4())
+}
+
+async fn delete_database(db_name: &str) {
+    let postgresql_conn_url: String = DATABASE_URL.to_owned();
+
+    let connection_options = PgConnectOptions::from_str(&postgresql_conn_url)
+        .expect("Failed to parse PostgreSQL connection string");
+
+    let mut connection = PgConnection::connect_with(&connection_options)
+        .await
+        .expect("Failed to connect to Postgres");
+
+    // Kill any active connections to the database
+    connection
+        .execute(
+            format!(
+                r#"
+                SELECT pg_terminate_backend(pg_stat_activity.pid)
+                FROM pg_stat_activity
+                WHERE pg_stat_activity.datname = '{}'
+                  AND pid <> pg_backend_pid();
+        "#,
+                db_name
+            )
+            .as_str(),
+        )
+        .await
+        .expect("Failed to drop the database.");
+
+    // Drop the database
+    connection
+        .execute(format!(r#"DROP DATABASE "{}";"#, db_name).as_str())
+        .await
+        .expect("Failed to drop the database.");
 }
