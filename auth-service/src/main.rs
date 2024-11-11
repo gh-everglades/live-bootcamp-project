@@ -3,13 +3,14 @@ use auth_service::{
     app_state::{AppState, EmailClientType, TwoFACodeStoreType, UserStoreType}, 
     domain::mock_email_client::MockEmailClient, get_postgres_pool, get_redis_client, 
     services::data_stores::{PostgresUserStore, RedisBannedTokenStore, RedisTwoFACodeStore}, 
-    utils::constants::{prod, DATABASE_URL, REDIS_HOST_NAME}, Application
+    utils::{constants::{prod, DATABASE_URL, REDIS_HOST_NAME}, tracing::init_tracing}, Application
 };
 use sqlx::PgPool;
 use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {
+    init_tracing();
     let pg_pool = configure_postgresql().await;
     let user_store: UserStoreType = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
     let redis_client = Arc::new(RwLock::new(configure_redis()));
