@@ -1,11 +1,14 @@
 use auth_service::{
-    app_state::{BannedTokenStoreType, EmailClientType, TwoFACodeStoreType}, domain::mock_email_client::MockEmailClient, get_postgres_pool, get_redis_client, services::data_stores::{HashmapTwoFACodeStore, PostgresUserStore, RedisBannedTokenStore}, utils::constants::{test, DATABASE_URL, REDIS_HOST_NAME}, Application};
+    app_state::{BannedTokenStoreType, EmailClientType, TwoFACodeStoreType}, 
+    domain::mock_email_client::MockEmailClient, get_postgres_pool, get_redis_client, 
+    services::data_stores::{PostgresUserStore, RedisBannedTokenStore, RedisTwoFACodeStore}, 
+    utils::constants::{test, DATABASE_URL, REDIS_HOST_NAME}, Application
+};
 use sqlx::{postgres::{PgConnectOptions, PgPoolOptions}, Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use auth_service::app_state::AppState;
 use tokio::sync::RwLock;
 use std::{str::FromStr, sync::Arc};
-use auth_service::services::data_stores::HashsetBannedTokenStore;
 use reqwest::cookie::Jar;
 
 pub struct TestApp {
@@ -36,10 +39,11 @@ impl TestApp {
         let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
 
         let redis_client = Arc::new(RwLock::new(configure_redis()));
-        let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_client)));
+        let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_client.clone())));
+        let two_fa_code_store: TwoFACodeStoreType  = Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_client))); 
 
         //let banned_token_store: BannedTokenStoreType = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
-        let two_fa_code_store: TwoFACodeStoreType = Arc::new(RwLock::new(HashmapTwoFACodeStore::default())); // New!
+        //let two_fa_code_store: TwoFACodeStoreType = Arc::new(RwLock::new(HashmapTwoFACodeStore::default())); // New!
         let email_client: EmailClientType = Arc::new(RwLock::new(MockEmailClient));
         let app_state = AppState::new(
                     user_store,
