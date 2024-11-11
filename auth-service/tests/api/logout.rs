@@ -41,7 +41,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
     let is_banned = app.banned_token_store
             .read()
             .await
-            .check_token(auth_cookie.value().to_string())
+            .contains_token(auth_cookie.value().to_string())
             .await
             .unwrap();
 

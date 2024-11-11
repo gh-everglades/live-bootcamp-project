@@ -28,7 +28,7 @@ pub async fn logout(
     state.banned_token_store
         .write()
         .await
-        .store_token(token)
+        .add_token(token)
         .await
         .unwrap();
     

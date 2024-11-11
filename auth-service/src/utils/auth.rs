@@ -61,7 +61,7 @@ pub fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> 
 
 // Check if JWT auth token is valid by decoding it using the JWT secret
 pub async fn validate_token(token: &str, banned_token_store: BannedTokenStoreType) -> Result<Claims, jsonwebtoken::errors::Error> {
-    match banned_token_store.read().await.check_token(token.to_string()).await {
+    match banned_token_store.read().await.contains_token(token.to_string()).await {
         Ok(value) => {
             if value {
                 return Err(jsonwebtoken::errors::Error::from(jsonwebtoken::errors::ErrorKind::InvalidToken));

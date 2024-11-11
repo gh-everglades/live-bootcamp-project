@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use crate::domain::{BannedTokenStore, UserStoreError};
+use crate::domain::{BannedTokenStore, BannedTokenStoreError};
 use std::sync::Mutex;
 
 
@@ -13,14 +13,14 @@ pub struct HashsetBannedTokenStore {
 // Implement the BannedTokenStore trait for HashsetBannedTokenStore.
 #[async_trait::async_trait]
 impl BannedTokenStore for HashsetBannedTokenStore {
-    async fn store_token(&self, token: String) -> Result<(), UserStoreError> {
-        let mut tokens = self.tokens.lock().map_err(|_| UserStoreError::UnexpectedError)?;
+    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
+        let mut tokens = self.tokens.lock().map_err(|_| BannedTokenStoreError::UnexpectedError)?;
         tokens.insert(token);
         Ok(())
     }
 
-    async fn check_token(&self, token: String) -> Result<bool, UserStoreError> {
-        let tokens = self.tokens.lock().map_err(|_| UserStoreError::UnexpectedError)?;
+    async fn contains_token(&self, token: String) -> Result<bool, BannedTokenStoreError> {
+        let tokens = self.tokens.lock().map_err(|_| BannedTokenStoreError::TokenDoNotExist)?;
         Ok(tokens.contains(&token))
     }
 }
@@ -32,20 +32,20 @@ mod tests {
 
     #[tokio::test]
     async fn test_store_and_check_tokens() {
-        let store = HashsetBannedTokenStore::default();
+        let mut store = HashsetBannedTokenStore::default();
         let token1 = "abc123".to_string();
         let token2 = "def456".to_string();
-        store.store_token(token1.clone()).await.unwrap();
-        store.store_token(token2.clone()).await.unwrap();
-        assert_eq!(store.check_token(token1.clone()).await, Ok(true));
-        assert_eq!(store.check_token(token2.clone()).await, Ok(true));
+        store.add_token(token1.clone()).await.unwrap();
+        store.add_token(token2.clone()).await.unwrap();
+        assert_eq!(store.contains_token(token1.clone()).await, Ok(true));
+        assert_eq!(store.contains_token(token2.clone()).await, Ok(true));
     }
 
     #[tokio::test]
     async fn test_check_non_existing_token() {
         let store = HashsetBannedTokenStore::default();
         let token1 = "abc123".to_string();
-        assert_eq!(store.check_token(token1.clone()).await, Ok(false));
+        assert_eq!(store.contains_token(token1.clone()).await, Ok(false));
         
     }
 }

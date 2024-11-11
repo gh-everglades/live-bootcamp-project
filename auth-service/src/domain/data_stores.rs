@@ -17,8 +17,14 @@ pub trait UserStore: {
 // exact API (input parameters & return values).
 #[async_trait::async_trait]
 pub trait BannedTokenStore {
-    async fn store_token(&self, token: String) -> Result<(), UserStoreError>;
-    async fn check_token(&self, token: String) -> Result<bool, UserStoreError>;
+    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError>;
+    async fn contains_token(&self, token: String) -> Result<bool, BannedTokenStoreError>;
+}
+
+#[derive(Debug, PartialEq)]
+pub enum BannedTokenStoreError {
+    TokenDoNotExist,
+    UnexpectedError,
 }
 
 // Add a UserStoreError enum to auth-service/src/domain/errors.rs
