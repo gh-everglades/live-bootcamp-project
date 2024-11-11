@@ -20,8 +20,14 @@
                     "test",
                     "--no-run",
                     "--manifest-path", "${workspaceFolder}/auth-service/Cargo.toml",
+                    "--lib",
+                    "--package=auth-service"
 
                 ],
+                "filter": {
+                    "name": "auth-service",
+                    "kind": "lib"
+                }
                 
             },
             "args": [],

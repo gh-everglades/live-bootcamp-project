@@ -12,8 +12,6 @@ use crate::{domain::{
     Email, Password, User, UserStore, UserStoreError
 }, utils::constants::PG_TABLE_NAME};
 
-use uuid::Uuid;
-use crate::{get_postgres_pool, utils::constants::DATABASE_URL};
 
 #[derive(Serialize, Deserialize, Debug, Clone, sqlx::FromRow)]
 pub struct Users {

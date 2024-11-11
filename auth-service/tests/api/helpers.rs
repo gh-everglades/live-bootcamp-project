@@ -14,14 +14,25 @@ pub struct TestApp {
     pub banned_token_store: BannedTokenStoreType,
     pub two_fa_code_store: TwoFACodeStoreType,
     pub http_client: reqwest::Client,
+    db_name: String,
+    clean_up_called: bool,
     
+}
+
+impl Drop for TestApp {
+    fn drop(&mut self) {
+        if !self.clean_up_called {
+            panic!("Database was not clean up!");
+        }
+    }
 }
 
 impl TestApp {
     pub async fn new() -> Self {
         //let user_store: UserStoreType = Arc::new(RwLock::new(HashmapUserStore::default()));
 
-        let pg_pool = configure_postgresql().await;
+        let db_name = Uuid::new_v4().to_string();
+        let pg_pool = configure_postgresql(&db_name).await;
         let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
 
         let banned_token_store: BannedTokenStoreType = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
@@ -58,6 +69,8 @@ impl TestApp {
             banned_token_store,
             two_fa_code_store,
             http_client,
+            db_name,
+            clean_up_called: false,
         }
     }
 
@@ -126,14 +139,19 @@ impl TestApp {
             .await
             .expect("Failed to execute request.")
     }
+
+    pub async fn clean_up(&mut self) {
+        delete_database(&self.db_name).await;
+        self.clean_up_called = true;
+    }
 }
 
-async fn configure_postgresql() -> PgPool {
+async fn configure_postgresql(db_name: &str) -> PgPool {
     let postgresql_conn_url = DATABASE_URL.to_owned();
 
     // We are creating a new database for each test case, and we need to ensure each database has a unique name!
-    let db_name = Uuid::new_v4().to_string();
-    println!("Creating database: {}", db_name);
+    //let db_name = Uuid::new_v4().to_string();
+    //println!("Creating database: {}", db_name);
 
     configure_database(&postgresql_conn_url, &db_name).await;
 
@@ -177,6 +195,8 @@ async fn configure_database(db_conn_string: &str, db_name: &str) {
 pub fn get_random_email() -> String {
     format!("{}@example.com", Uuid::new_v4())
 }
+
+
 
 async fn delete_database(db_name: &str) {
     let postgresql_conn_url: String = DATABASE_URL.to_owned();

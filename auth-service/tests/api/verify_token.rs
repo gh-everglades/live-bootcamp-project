@@ -10,7 +10,7 @@ async fn should_return_200_valid_token() {
     // if the JWT token is valid, a 200 HTTP status code should be sent back.
     // Generate a random email and use it to generate a JWT token. Then, send a POST request to the /verify-token route with the token as a JSON object.
     // Assert that a 200 HTTP status code is returned.
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -39,13 +39,14 @@ async fn should_return_200_valid_token() {
     let response = app.post_verify_token(&verify_body).await;
     assert_eq!(response.status().as_u16(), 200);
 
+    app.clean_up().await;
     
 }
 
 #[tokio::test]
 async fn should_return_401_if_banned_token() {
     // This new test case ensures that the verify-token route rejects banned tokens!
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
     let signup_body = serde_json::json!({
@@ -85,6 +86,7 @@ async fn should_return_401_if_banned_token() {
 
     assert_eq!(response.status().as_u16(), 401);
 
+    app.clean_up().await;
 }
 
 #[tokio::test]
@@ -92,7 +94,7 @@ async fn should_return_401_if_invalid_token() {
     // If the JSON object contains an invalid or incorrect token, a 401 HTTP status code should be returned.
     // Generate a random email and use it to generate a JWT token. Then, send a POST request to the /verify-token route with an invalid or incorrect token as a JSON object.
     // Assert that a 401 HTTP status code is returned.
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -121,13 +123,14 @@ async fn should_return_401_if_invalid_token() {
     let response = app.post_verify_token(&verify_body).await;
     assert_eq!(response.status().as_u16(), 401);
 
+    app.clean_up().await;
 }
 
 // If the JSON object is missing or malformed, a 422 HTTP status code should be sent back. 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
 
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let email = Email::parse("test@example.com".to_owned()).unwrap();
     let result = generate_auth_token(&email).unwrap();
@@ -138,4 +141,6 @@ async fn should_return_422_if_malformed_input() {
     println!("Token: {}", result);
     let response = app.post_signup(&verify_body).await;
     assert_eq!(response.status().as_u16(), 422);
+
+    app.clean_up().await;
 }

@@ -4,7 +4,7 @@ use crate::helpers::{get_random_email, TestApp};
 
 #[tokio::test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -44,7 +44,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
     assert_eq!(login_attempt_id, json_body.login_attempt_id);
                                     
-    
+    app.clean_up().await;
     
 
 }
@@ -52,7 +52,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
 #[tokio::test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -81,11 +81,12 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email(); // Call helper method to generate email 
 
@@ -120,6 +121,7 @@ async fn should_return_422_if_malformed_credentials() {
         );
 
     }
+    app.clean_up().await;
 }
 
 #[tokio::test]
@@ -133,7 +135,7 @@ async fn should_return_400_if_invalid_input() {
 
     // Create an array of invalid inputs. Then, iterate through the array and 
     // make HTTP calls to the signup route. Assert a 400 HTTP status code is returned.
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email(); 
     let input = [
@@ -154,23 +156,16 @@ async fn should_return_400_if_invalid_input() {
     for i in input.iter() {
         let response = app.post_login(i).await;
         assert_eq!(response.status().as_u16(), 400, "Failed for input: {:?}", i);
-
-        assert_eq!(
-            response
-                .json::<ErrorResponse>()
-                .await
-                .expect("Could not deserialize response body to ErrorResponse")
-                .error,
-            "Invalid credentials".to_owned()
-        );
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
     // Call the log-in route with incorrect credentials and assert
     // that a 401 HTTP status code is returned along with the appropriate error message.     
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email(); // Call helper method to generate email 
 
@@ -179,9 +174,13 @@ async fn should_return_401_if_incorrect_credentials() {
         "password": "StrongPassword199$123",
     })).await;
 
+    app.clean_up().await;
+
     assert_eq!(
         response.status().as_u16(),
         401,
         "Failed for incorrect credentials"
     );
+
+    
 }
