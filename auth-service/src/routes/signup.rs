@@ -12,6 +12,7 @@ pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
     ) -> Result<impl IntoResponse, AuthAPIError> {
+
     let email = Email::parse(request.email.clone())?;
     let password = Password::parse(request.password)?;
 
@@ -25,7 +26,9 @@ pub async fn signup(
     }
 
     // instead of using unwrap, early return AuthAPIError::UnexpectedError if add_user() fails.
-    user_store.add_user(user).await.map_err(|_| AuthAPIError::UnexpectedError)?;
+    if let Err(e) = user_store.add_user(user).await {
+        return Err(AuthAPIError::UnexpectedError(e.into())); // Updated!
+    }
 
     let response = Json(SignupResponse {
         message: "User created successfully!".to_string(),

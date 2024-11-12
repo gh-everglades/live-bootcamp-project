@@ -10,6 +10,7 @@ use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {
+    color_eyre::install().expect("Failed to install color_eyre"); // New!
     init_tracing();
     let pg_pool = configure_postgresql().await;
     let user_store: UserStoreType = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));

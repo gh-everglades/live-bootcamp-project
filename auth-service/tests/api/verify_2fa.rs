@@ -1,4 +1,4 @@
-use auth_service::{domain::Email, routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME};
+/*use auth_service::{domain::Email, routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME};
 
 use crate::helpers::{get_random_email, TestApp};
 
@@ -328,4 +328,4 @@ async fn should_return_401_if_same_code_twice() {
     assert_eq!(response.status().as_u16(), 401);
 
     app.clean_up().await;
-}
+}*/

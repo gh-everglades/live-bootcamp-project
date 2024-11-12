@@ -12,6 +12,7 @@ use crate::{domain::{
     Email, Password, User, UserStore, UserStoreError
 }, utils::constants::PG_TABLE_NAME};
 
+use color_eyre::eyre::{eyre, Context, Result};
 
 #[derive(Serialize, Deserialize, Debug, Clone, sqlx::FromRow)]
 pub struct Users {
@@ -33,45 +34,53 @@ impl PostgresUserStore {
 #[async_trait::async_trait]
 impl UserStore for PostgresUserStore {
     // Implement all required methods. Note that you will need to make SQL queries against our PostgreSQL instance inside these methods.
-    #[tracing::instrument(name = "Adding user to PostgreSQL", skip_all)] // New!
+    #[tracing::instrument(name = "Adding user to PostgreSQL", skip_all)]
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        
-        let password_hash = compute_password_hash(user.password.as_ref().to_string())
-            .await.map_err(|_| UserStoreError::InvalidCredentials)?;
-        
-
-        let sql = format!("insert into {} (email, password_hash, requires_2fa) values ($1, $2, $3)", PG_TABLE_NAME);
-        let query = sqlx::query(&sql);
-        query
-            .bind(user.email.as_ref())
-            .bind(password_hash)
-            .bind(user.requires_2fa)
-            .execute(&self.pool)
+        let password_hash = compute_password_hash(user.password.as_ref().to_owned())
             .await
-            .map_err(|_| UserStoreError::UnexpectedError)?;
+            .map_err(UserStoreError::UnexpectedError)?; // Updated!
+
+        sqlx::query!(
+            r#"
+            INSERT INTO users (email, password_hash, requires_2fa)
+            VALUES ($1, $2, $3)
+            "#,
+            user.email.as_ref(),
+            &password_hash,
+            user.requires_2fa
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| UserStoreError::UnexpectedError(e.into()))?; // Updated!
 
         Ok(())
     }
-    #[tracing::instrument(name = "Retrieving user from PostgreSQL", skip_all)] // New!
+
+    #[tracing::instrument(name = "Retrieving user from PostgreSQL", skip_all)]
     async fn get_user(&self, email: Email) -> Result<User, UserStoreError> {
-        let sql = format!("select * from {} where email = $1", PG_TABLE_NAME);
-        let query = sqlx::query_as::<_, Users>(&sql);
-        let data = match query.bind(email.as_ref()).fetch_one(&self.pool).await {
-            Ok(u) => u,
-            Err(e) => match e {
-                sqlx::Error::RowNotFound => return Err(UserStoreError::UserNotFound),
-                _ => return Err(UserStoreError::UnexpectedError),
-            }
-        };
-
-        let email = Email::parse(data.email)
-            .map_err(|_| UserStoreError::InvalidCredentials)?;
-        let password = Password::parse(data.password_hash)
-            .map_err(|_| UserStoreError::InvalidCredentials)?;
-        let user = User::new(email, password, data.requires_2fa);
-
-        Ok(user)
+        sqlx::query!(
+            r#"
+            SELECT email, password_hash, requires_2fa
+            FROM users
+            WHERE email = $1
+            "#,
+            email.as_ref()
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| UserStoreError::UnexpectedError(e.into()))?
+        .map(|row| {
+            Ok(User {
+                email: Email::parse(row.email)
+                    .map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?, // Updated!
+                password: Password::parse(row.password_hash)
+                    .map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?, // Updated!
+                requires_2fa: row.requires_2fa,
+            })
+        })
+        .ok_or(UserStoreError::UserNotFound)?
     }
+
     #[tracing::instrument(name = "Validating user credentials in PostgreSQL", skip_all)] // New!
     async fn validate_user(&self, email: Email, password: Password) -> Result<(), UserStoreError> {
         let sql = format!("select * from {} where email = $1", PG_TABLE_NAME);
@@ -80,7 +89,7 @@ impl UserStore for PostgresUserStore {
             Ok(u) => u,
             Err(e) => match e {
                 sqlx::Error::RowNotFound => return Err(UserStoreError::UserNotFound),
-                _ => return Err(UserStoreError::UnexpectedError),
+                _ => return Err(UserStoreError::UnexpectedError(eyre!(e))),
             }
         };
 
@@ -103,7 +112,7 @@ impl UserStore for PostgresUserStore {
 pub async fn verify_password_hash(
     expected_password_hash: String,
     password_candidate: String,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
+) -> Result<()> {
     // This line retrieves the current span from the tracing context. 
     // The span represents the execution context for the compute_password_hash function.
     let current_span: tracing::Span = tracing::Span::current(); // New!
@@ -116,7 +125,7 @@ pub async fn verify_password_hash(
 
             Argon2::default()
                 .verify_password(password_candidate.as_bytes(), &expected_password_hash)
-                .map_err(|e| e.into())
+                .wrap_err("failed to verify password hash")
         })
     })
     .await;
@@ -130,7 +139,7 @@ pub async fn verify_password_hash(
 // separate thread pool using tokio::task::spawn_blocking. Note that you
 // will need to update the input parameters to be String types instead of &str
 #[tracing::instrument(name = "Computing password hash", skip_all)] //New!
-async fn compute_password_hash(password: String) -> Result<String, Box<dyn Error + Send + Sync>> {
+async fn compute_password_hash(password: String) -> Result<String> {
     // This line retrieves the current span from the tracing context. 
     // The span represents the execution context for the compute_password_hash function.
     let current_span: tracing::Span = tracing::Span::current(); // New!
@@ -148,7 +157,8 @@ async fn compute_password_hash(password: String) -> Result<String, Box<dyn Error
             .hash_password(password.as_bytes(), &salt)?
             .to_string();
 
-            Ok(password_hash)
+            // Ok(password_hash)
+            Err(eyre!("oh no!")) // New!
         })
     })
     .await;
