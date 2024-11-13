@@ -16,7 +16,7 @@ pub async fn verify_2fa(
         Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
     };
 
-    let login_attempt_id = match LoginAttemptId::parse(request.login_attempt_id.clone()) {
+    let login_attempt_id = match LoginAttemptId::parse(request.login_attempt_id) {
         Ok(login_attempt_id) => login_attempt_id,
         Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
     };
@@ -52,13 +52,13 @@ pub async fn verify_2fa(
 }
 
 // implement the Verify2FARequest struct. See the verify-2fa route contract in step 1 for the expected JSON body.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Verify2FARequest {
     pub email: Secret<String>,
     #[serde(rename = "loginAttemptId")]
-    pub login_attempt_id: String,
+    pub login_attempt_id: Secret<String>,
     #[serde(rename = "2FACode")]
-    pub two_fa_code: String,
+    pub two_fa_code: Secret<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

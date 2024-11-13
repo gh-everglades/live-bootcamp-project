@@ -1,5 +1,5 @@
 use auth_service::{domain::Email, routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME};
-use secrecy::Secret;
+use secrecy::{Secret, ExposeSecret};
 
 use crate::helpers::{get_random_email, TestApp};
 
@@ -41,7 +41,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
                 await.
                 get_code(&Email::parse(Secret::new(random_email)).unwrap()).
                 await.
-                unwrap().0.as_ref().to_string();
+                unwrap().0.as_ref().expose_secret().to_owned();
 
     assert_eq!(login_attempt_id, json_body.login_attempt_id);
                                     

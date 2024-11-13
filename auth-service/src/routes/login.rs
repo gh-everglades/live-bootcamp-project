@@ -1,7 +1,7 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::{cookie::Cookie, CookieJar};
 
-use secrecy::Secret;
+use secrecy::{Secret, ExposeSecret};
 use serde::{Deserialize, Serialize};
 use color_eyre::eyre::Result;
 
@@ -100,7 +100,7 @@ async fn handle_2fa(
     // send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
     if let Err(e) = state
         .email_client
-        .send_email(email, "2FA Code", two_fa_code.as_ref())
+        .send_email(email, "2FA Code", two_fa_code.as_ref().expose_secret())
         .await
     {
         return (jar, Err(AuthAPIError::UnexpectedError(e)));
@@ -109,7 +109,7 @@ async fn handle_2fa(
     // The login attempt ID should be "123456". We will replace this hard-coded login attempt ID soon!
     let two_factor_auth_response = TwoFactorAuthResponse {
         message: "2FA required".to_string(),
-        login_attempt_id: login_attempt_id.as_ref().to_string(),
+        login_attempt_id: login_attempt_id.as_ref().expose_secret().to_owned(),
     };
 
     let updated_jar = jar.add(Cookie::new("login_attempt_id", "123456"));

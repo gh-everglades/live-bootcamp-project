@@ -1,5 +1,5 @@
 use auth_service::{domain::Email, routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME};
-use secrecy::Secret;
+use secrecy::{Secret, ExposeSecret};
 
 use crate::helpers::{get_random_email, TestApp};
 
@@ -193,8 +193,8 @@ async fn should_return_401_if_old_code() {
     let response = app
      .post_verify_2fa(&serde_json::json!({
             "email": random_email,
-            "loginAttemptId": second_login_attempt_id.to_string(),
-            "2FACode": first_token
+            "loginAttemptId": second_login_attempt_id,
+            "2FACode": first_token.expose_secret()
         }))
         .await;
     assert_eq!(response.status().as_u16(), 401);
@@ -249,7 +249,7 @@ async fn should_return_200_if_correct_code() {
     let request_body = serde_json::json!({
         "email": random_email,
         "loginAttemptId": login_attempt_id,
-        "2FACode": code
+        "2FACode": code.expose_secret()
     });
 
     let response = app.post_verify_2fa(&request_body).await;
@@ -312,7 +312,7 @@ async fn should_return_401_if_same_code_twice() {
     let request_body = serde_json::json!({
         "email": random_email,
         "loginAttemptId": login_attempt_id,
-        "2FACode": code
+        "2FACode": code.expose_secret()
     });
 
     let response = app.post_verify_2fa(&request_body).await;
