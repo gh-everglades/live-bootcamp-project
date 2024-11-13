@@ -11,16 +11,16 @@ use crate::{app_state::BannedTokenStoreType, domain::Email};
 
 use super::constants::{JWT_COOKIE_NAME, JWT_SECRET};
 
-// This is definitely NOT a good secret. We will update it soon!
-//const JWT_SECRET: &str = "secret";
 
 // Create cookie with a new JWT auth token
+#[tracing::instrument(name = "Generate Auth Cookie", skip_all)]
 pub fn generate_auth_cookie(email: &Email) -> Result<Cookie<'static>> {
     let token = generate_auth_token(email)?;
     Ok(create_auth_cookie(token))
 }
 
 // Create cookie and set the value to the passed-in token string 
+#[tracing::instrument(name = "Create Auth Cookie", skip_all)]
 fn create_auth_cookie(token: String) -> Cookie<'static> {
     let cookie = Cookie::build((JWT_COOKIE_NAME, token))
         .path("/")
@@ -44,6 +44,7 @@ pub enum GenerateTokenError {
 pub const TOKEN_TTL_SECONDS: i64 = 600; // 10 minutes
 
 // Create JWT auth token
+#[tracing::instrument(name = "Generate Auth Token", skip_all)]
 pub fn generate_auth_token(email: &Email) -> Result<String> {
     let delta = chrono::Duration::try_seconds(TOKEN_TTL_SECONDS)
         .wrap_err("failed to create 10 minute time delta")?;
@@ -66,10 +67,12 @@ pub fn generate_auth_token(email: &Email) -> Result<String> {
 }
 
 // Check if JWT auth token is valid by decoding it using the JWT secret
+#[tracing::instrument(name = "Validate Token", skip_all)]
 pub async fn validate_token(
     token: String,
     banned_token_store: BannedTokenStoreType,
 ) -> Result<Claims> {
+
     match banned_token_store.read().await.contains_token(token.clone()).await {
         Ok(value) => {
             if value {
@@ -89,6 +92,7 @@ pub async fn validate_token(
 }
 
 // Create JWT auth token by encoding claims using the JWT secret
+#[tracing::instrument(name = "Create Token", skip_all)]
 fn create_token(claims: &Claims) -> Result<String> {
     encode(
         &jsonwebtoken::Header::default(),

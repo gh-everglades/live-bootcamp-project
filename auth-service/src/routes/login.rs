@@ -10,6 +10,7 @@ use crate::{
     utils::auth::generate_auth_cookie,
 };
 
+#[tracing::instrument(name = "Login", skip_all)]
 pub async fn login(
     State(state): State<AppState>,
     jar: CookieJar, // New!
@@ -72,7 +73,7 @@ pub struct TwoFactorAuthResponse {
     pub login_attempt_id: String,
 }
 
-// New!
+#[tracing::instrument(name = "Handle 2FA", skip_all)]
 async fn handle_2fa(
     email: &Email, // New!
     state: &AppState, // New!
@@ -117,7 +118,7 @@ async fn handle_2fa(
     (updated_jar, Ok((StatusCode::PARTIAL_CONTENT, Json(LoginResponse::TwoFactorAuth(two_factor_auth_response)))))
 }
 
-// New!
+#[tracing::instrument(name = "Handle no 2FA", skip_all)]
 async fn handle_no_2fa(
     email: &Email,
     jar: CookieJar,

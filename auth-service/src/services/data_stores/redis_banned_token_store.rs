@@ -21,6 +21,7 @@ impl RedisBannedTokenStore {
 
 #[async_trait::async_trait]
 impl BannedTokenStore for RedisBannedTokenStore {
+    #[tracing::instrument(name = "Banned Store Add Token", skip_all)]
     async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
         let token_key = get_key(token.as_str());
 
@@ -42,6 +43,7 @@ impl BannedTokenStore for RedisBannedTokenStore {
         Ok(())
     }
 
+    #[tracing::instrument(name = "Banned Store Contains Token", skip_all)]
     async fn contains_token(&self, token: String) -> Result<bool, BannedTokenStoreError> {
         let token_key = get_key(&token);
 
@@ -59,7 +61,7 @@ impl BannedTokenStore for RedisBannedTokenStore {
 
 // We are using a key prefix to prevent collisions and organize data!
 const BANNED_TOKEN_KEY_PREFIX: &str = "banned_token:";
-
+#[tracing::instrument(name = "Banned Store Get Key", skip_all)]
 fn get_key(token: &str) -> String {
     format!("{}{}", BANNED_TOKEN_KEY_PREFIX, token)
 }
