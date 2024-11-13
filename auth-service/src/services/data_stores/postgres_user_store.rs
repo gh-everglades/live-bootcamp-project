@@ -45,7 +45,7 @@ impl UserStore for PostgresUserStore {
             INSERT INTO users (email, password_hash, requires_2fa)
             VALUES ($1, $2, $3)
             "#,
-            user.email.as_ref(),
+            user.email.expose_secret(),
             &password_hash.expose_secret(), // Updated!
             user.requires_2fa
         )
@@ -64,14 +64,14 @@ impl UserStore for PostgresUserStore {
             FROM users
             WHERE email = $1
             "#,
-            email.as_ref()
+            email.expose_secret()
         )
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| UserStoreError::UnexpectedError(e.into()))?
         .map(|row| {
             Ok(User {
-                email: Email::parse(row.email)
+                email: Email::parse(Secret::new(row.email))
                     .map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?, // Updated!
                 password: Password::parse(Secret::new(row.password_hash)) // Updated!
                     .map_err(UserStoreError::UnexpectedError)?, // Updated!
@@ -85,7 +85,7 @@ impl UserStore for PostgresUserStore {
     async fn validate_user(&self, email: Email, password: Password) -> Result<(), UserStoreError> {
         let sql = format!("select * from {} where email = $1", PG_TABLE_NAME);
         let query = sqlx::query_as::<_, Users>(&sql);
-        let data = match query.bind(email.as_ref()).fetch_one(&self.pool).await {
+        let data = match query.bind(email.expose_secret()).fetch_one(&self.pool).await {
             Ok(u) => u,
             Err(e) => match e {
                 sqlx::Error::RowNotFound => return Err(UserStoreError::UserNotFound),

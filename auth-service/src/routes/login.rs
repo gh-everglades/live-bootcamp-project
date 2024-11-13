@@ -53,7 +53,7 @@ pub async fn login(
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
-    email: String,
+    email: Secret<String>,
     password: Secret<String>,
 }
 
@@ -100,8 +100,6 @@ async fn handle_2fa(
     // send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
     if let Err(e) = state
         .email_client
-        .read()
-        .await
         .send_email(email, "2FA Code", two_fa_code.as_ref())
         .await
     {

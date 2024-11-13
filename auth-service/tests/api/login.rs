@@ -1,4 +1,5 @@
 use auth_service::{domain::Email, routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME};
+use secrecy::Secret;
 
 use crate::helpers::{get_random_email, TestApp};
 
@@ -38,7 +39,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     let login_attempt_id = app.two_fa_code_store.
                 read().
                 await.
-                get_code(&Email::parse(random_email).unwrap()).
+                get_code(&Email::parse(Secret::new(random_email)).unwrap()).
                 await.
                 unwrap().0.as_ref().to_string();
 

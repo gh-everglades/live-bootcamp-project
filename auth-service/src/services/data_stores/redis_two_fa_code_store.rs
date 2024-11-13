@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use redis::{Commands, Connection};
+use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use color_eyre::eyre::Context;
@@ -117,5 +118,5 @@ const TWO_FA_CODE_PREFIX: &str = "two_fa_code:";
 
 #[tracing::instrument(name = "2FA Store Get Key", skip_all)]
 fn get_key(email: &Email) -> String {
-    format!("{}{}", TWO_FA_CODE_PREFIX, email.as_ref())
+    format!("{}{}", TWO_FA_CODE_PREFIX, email.expose_secret())
 }

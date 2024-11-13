@@ -38,6 +38,8 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
 
 #[cfg(test)]
 mod tests {
+    use secrecy::Secret;
+
     use super::*;
     use crate::domain::Email;
 
@@ -45,7 +47,7 @@ mod tests {
     async fn test_add_code() {
         let mut store = HashmapTwoFACodeStore::default();
         let code = TwoFACode::default();
-        let email = Email::parse("test@example.com".to_owned()).unwrap();
+        let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
         
         let login_attempt_id = LoginAttemptId::default();
         store.add_code(email.clone(), login_attempt_id.clone(), code.clone()).await.unwrap();
@@ -56,7 +58,7 @@ mod tests {
     async fn test_remove_code() {
         let mut store = HashmapTwoFACodeStore::default();
         let code = TwoFACode::default();
-        let email = Email::parse("test@example.com".to_owned()).unwrap();
+        let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
         let login_attempt_id = LoginAttemptId::default();
         store.add_code(email.clone(), login_attempt_id, code.clone()).await.unwrap();
         store.remove_code(&email).await.unwrap();
@@ -67,7 +69,7 @@ mod tests {
     async fn test_get_code() {
         let mut store = HashmapTwoFACodeStore::default();
         let code = TwoFACode::default();
-        let email = Email::parse("test@example.com".to_owned()).unwrap();
+        let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
         let login_attempt_id = LoginAttemptId::default();
         store.add_code(email.clone(), login_attempt_id.clone(), code.clone()).await.unwrap();
         assert_eq!(store.get_code(&email).await.unwrap(), (login_attempt_id, code));

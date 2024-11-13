@@ -62,7 +62,7 @@ mod tests {
     #[tokio::test]
     async fn test_add_user() {
         let mut store = HashmapUserStore::default();
-        let email = Email::parse("test@example.com".to_string()).unwrap();
+        let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
         let password = Password::parse(Secret::new("password123".to_string())).unwrap();
         let user = User::new(email.clone(), password, true);
         assert_eq!(store.add_user(user).await, Ok(()));
@@ -72,7 +72,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_user() {
         let mut store = HashmapUserStore::default();
-        let email = Email::parse("test@example.com".to_string()).unwrap();
+        let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
         let password = Password::parse(Secret::new("password123".to_string())).unwrap();
         let user = User::new(email.clone(), password, true);
         store.add_user(user.clone()).await.unwrap();
@@ -82,7 +82,7 @@ mod tests {
     #[tokio::test]
     async fn test_validate_user() {
         let mut store = HashmapUserStore::default();
-        let email = Email::parse("test@example.com".to_string()).unwrap();
+        let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
         let password = Password::parse(Secret::new("password123".to_string())).unwrap();
         let user = User::new(email.clone(), password.clone(), true);
         store.add_user(user).await.unwrap();

@@ -4,6 +4,7 @@ use auth_service::{
     services::data_stores::{PostgresUserStore, RedisBannedTokenStore, RedisTwoFACodeStore}, 
     utils::constants::{test, DATABASE_URL, REDIS_HOST_NAME}, Application
 };
+use secrecy::{ExposeSecret, Secret};
 use sqlx::{postgres::{PgConnectOptions, PgPoolOptions}, Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use auth_service::app_state::AppState;
@@ -44,7 +45,7 @@ impl TestApp {
 
         //let banned_token_store: BannedTokenStoreType = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
         //let two_fa_code_store: TwoFACodeStoreType = Arc::new(RwLock::new(HashmapTwoFACodeStore::default())); // New!
-        let email_client: EmailClientType = Arc::new(RwLock::new(MockEmailClient));
+        let email_client: EmailClientType = Arc::new(MockEmailClient);
         let app_state = AppState::new(
                     user_store,
                     banned_token_store.clone(),
@@ -160,12 +161,12 @@ async fn configure_postgresql(db_name: &str) -> PgPool {
     //let db_name = Uuid::new_v4().to_string();
     //println!("Creating database: {}", db_name);
 
-    configure_database(&postgresql_conn_url, &db_name).await;
+    configure_database(&postgresql_conn_url.expose_secret(), &db_name).await;
 
-    let postgresql_conn_url_with_db = format!("{}/{}", postgresql_conn_url, db_name);
+    let postgresql_conn_url_with_db = format!("{}/{}", postgresql_conn_url.expose_secret(), db_name);
 
     // Create a new connection pool and return it
-    get_postgres_pool(&postgresql_conn_url_with_db)
+    get_postgres_pool(&Secret::new(postgresql_conn_url_with_db))
         .await
         .expect("Failed to create Postgres connection pool!")
 }
@@ -206,7 +207,7 @@ pub fn get_random_email() -> String {
 
 
 async fn delete_database(db_name: &str) {
-    let postgresql_conn_url: String = DATABASE_URL.to_owned();
+    let postgresql_conn_url: String = DATABASE_URL.expose_secret().clone();
 
     let connection_options = PgConnectOptions::from_str(&postgresql_conn_url)
         .expect("Failed to parse PostgreSQL connection string");
