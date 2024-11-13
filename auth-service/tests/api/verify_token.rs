@@ -1,6 +1,6 @@
 use auth_service::utils::{auth::generate_auth_token, constants::JWT_COOKIE_NAME};
 use auth_service::domain::Email;
-use secrecy::Secret;
+use secrecy::{ExposeSecret, Secret};
 use crate::helpers::{get_random_email, TestApp};
 
 
@@ -137,9 +137,9 @@ async fn should_return_422_if_malformed_input() {
     let result = generate_auth_token(&email).unwrap();
 
     let verify_body = serde_json::json!({
-        "token": result
+        "token": result.expose_secret()
     });
-    println!("Token: {}", result);
+
     let response = app.post_signup(&verify_body).await;
     assert_eq!(response.status().as_u16(), 422);
 

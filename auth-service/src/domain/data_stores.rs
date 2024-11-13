@@ -1,4 +1,5 @@
 use super::{Email, Password, User};
+use secrecy::Secret;
 use uuid::Uuid;
 use rand::Rng;
 use color_eyre::eyre::{eyre, Context, Report, Result};
@@ -20,8 +21,8 @@ pub trait UserStore: {
 // exact API (input parameters & return values).
 #[async_trait::async_trait]
 pub trait BannedTokenStore {
-    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError>;
-    async fn contains_token(&self, token: String) -> Result<bool, BannedTokenStoreError>;
+    async fn add_token(&mut self, token: Secret<String>) -> Result<(), BannedTokenStoreError>;
+    async fn contains_token(&self, token: &Secret<String>) -> Result<bool, BannedTokenStoreError>;
 }
 
 #[derive(Debug, Error)]

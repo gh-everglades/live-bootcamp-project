@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use auth_service::{
-    app_state::{AppState, EmailClientType, TwoFACodeStoreType, UserStoreType}, 
-    domain::{mock_email_client::MockEmailClient, Email}, get_postgres_pool, get_redis_client, 
+    app_state::{AppState, TwoFACodeStoreType, UserStoreType}, 
+    domain::Email, get_postgres_pool, get_redis_client, 
     services::{data_stores::{PostgresUserStore, RedisBannedTokenStore, RedisTwoFACodeStore}, postmark_email_client::PostmarkEmailClient}, 
     utils::{constants::{prod, DATABASE_URL, POSTMARK_AUTH_TOKEN, REDIS_HOST_NAME}, tracing::init_tracing}, Application
 };

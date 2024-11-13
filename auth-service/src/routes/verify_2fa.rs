@@ -1,4 +1,4 @@
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{extract::State, response::IntoResponse, Json};
 use axum_extra::extract::CookieJar;
 use secrecy::Secret;
 use serde::{Deserialize, Serialize};
