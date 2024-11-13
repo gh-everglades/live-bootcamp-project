@@ -1,6 +1,7 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::{cookie::Cookie, CookieJar};
 
+use secrecy::Secret;
 use serde::{Deserialize, Serialize};
 use color_eyre::eyre::Result;
 
@@ -52,8 +53,8 @@ pub async fn login(
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
-    pub email: String,
-    pub password: String
+    email: String,
+    password: Secret<String>,
 }
 
 // The login route can return 2 possible success responses.
