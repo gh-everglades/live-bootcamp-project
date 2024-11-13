@@ -8,7 +8,7 @@ pub async fn verify_token(
     Json(request): Json<VerifyRequest>
 ) -> Result<impl IntoResponse, AuthAPIError> {
     
-    validate_token(request.token.as_str(), state.banned_token_store).await.map_err(|_| AuthAPIError::InvalidToken)?;
+    validate_token(request.token, state.banned_token_store).await.map_err(|_| AuthAPIError::InvalidToken)?;
 
     Ok((StatusCode::OK, "Token verified successfully!".to_string()  ))
 }

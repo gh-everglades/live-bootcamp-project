@@ -1,7 +1,8 @@
-/*use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::{cookie::Cookie, CookieJar};
 
 use serde::{Deserialize, Serialize};
+use color_eyre::eyre::Result;
 
 use crate::{
     app_state::AppState,
@@ -84,30 +85,26 @@ async fn handle_2fa(
     let login_attempt_id: LoginAttemptId = LoginAttemptId::default();
     let two_fa_code: TwoFACode = TwoFACode::default(); // New!
 
-    // Store the ID and code in our 2FA code store. Return `AuthAPIError::UnexpectedError` if the operation fails
-    let stored_2fa_result= state.
-                            two_factor_code_store.
-                            write().
-                            await.
-                            add_code(email.to_owned(), login_attempt_id.clone(), two_fa_code.clone()).await;
-    if let Err(_) = stored_2fa_result {
-        return (jar, Err(AuthAPIError::UnexpectedError));
+    if let Err(e) = state
+        .two_factor_code_store
+        .write()
+        .await
+        .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
+        .await
+    {
+        return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
     }
 
     // send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
-
-    let email_client = state.email_client.read().await;
-    let send_result = email_client.
-                        send_email(
-                        email,
-                            "Subject: 2FA code",
-                            two_fa_code.as_ref()
-                        ).await;
-
-    if let Err(_) = send_result {
-        return (jar, Err(AuthAPIError::UnexpectedError));
+    if let Err(e) = state
+        .email_client
+        .read()
+        .await
+        .send_email(email, "2FA Code", two_fa_code.as_ref())
+        .await
+    {
+        return (jar, Err(AuthAPIError::UnexpectedError(e)));
     }
-
     // Return a TwoFactorAuthResponse. The message should be "2FA required".
     // The login attempt ID should be "123456". We will replace this hard-coded login attempt ID soon!
     let two_factor_auth_response = TwoFactorAuthResponse {
@@ -130,9 +127,9 @@ async fn handle_no_2fa(
 ) {
     let auth_cookie = match generate_auth_cookie(email) {
         Ok(cookie) => cookie,
-        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+        Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(e.into()))),
     };
     let updated_jar = jar.add(auth_cookie);
     (updated_jar, Ok((StatusCode::OK, Json(LoginResponse::RegularAuth))))
 }
-*/
+

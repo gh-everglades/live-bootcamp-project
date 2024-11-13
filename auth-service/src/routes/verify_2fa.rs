@@ -1,52 +1,53 @@
-/*use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::CookieJar;
 use serde::{Deserialize, Serialize};
 
 use crate::{app_state::AppState, domain::{AuthAPIError, Email, LoginAttemptId, TwoFACode}, utils::auth::generate_auth_cookie};
 
+#[tracing::instrument(name = "Verify 2FA", skip_all)]
 pub async fn verify_2fa(
-    State(state): State<AppState>, // New!
+    State(state): State<AppState>,
     jar: CookieJar,
-    Json(request): Json<Verify2FARequest>
-) -> Result<(CookieJar, impl IntoResponse), AuthAPIError> {
-    
-    // Validate the email in `request`
-    let email = Email::parse(request.email)
-                .map_err(|_| AuthAPIError::InvalidCredentials)?;
+    Json(request): Json<Verify2FARequest>,
+) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
+    let email = match Email::parse(request.email.clone()) {
+        Ok(email) => email,
+        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
+    };
 
-    // Validate the login attempt ID in `request`
-    let login_attempt_id = LoginAttemptId::parse(request.login_attempt_id)
-                .map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let login_attempt_id = match LoginAttemptId::parse(request.login_attempt_id.clone()) {
+        Ok(login_attempt_id) => login_attempt_id,
+        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
+    };
 
-    // Validate the 2FA code in `request`
-    let two_fa_code = TwoFACode::parse(request.two_fa_code)
-                .map_err(|_| AuthAPIError::InvalidCredentials)?;
-    
-    // New!
+    let two_fa_code = match TwoFACode::parse(request.two_fa_code) {
+        Ok(two_fa_code) => two_fa_code,
+        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
+    };
+
     let mut two_fa_code_store = state.two_factor_code_store.write().await;
 
-    // Call `two_fa_code_store.get_code`. If the call fails
-    // return a `AuthAPIError::IncorrectCredentials`.
-    let code_tuple = two_fa_code_store
-                    .get_code(&email)
-                    .await
-                    .map_err(|_| AuthAPIError::IncorrectCredentials)?;
+    let code_tuple = match two_fa_code_store.get_code(&email).await {
+        Ok(code_tuple) => code_tuple,
+        Err(_) => return (jar, Err(AuthAPIError::IncorrectCredentials)),
+    };
 
-    // Validate that the `login_attempt_id` and `two_fa_code`
-    // in the request body matches values in the `code_tuple`. 
-    // If not, return a `AuthAPIError::IncorrectCredentials`.
-    if (login_attempt_id, two_fa_code) != code_tuple {
-        return Err(AuthAPIError::IncorrectCredentials);
+    if !code_tuple.0.eq(&login_attempt_id) || !code_tuple.1.eq(&two_fa_code) {
+        return (jar, Err(AuthAPIError::IncorrectCredentials));
     }
 
-    let cookie = generate_auth_cookie(&email)
-        .map_err(|_| AuthAPIError::UnexpectedError)?;
+    if let Err(e) = two_fa_code_store.remove_code(&email).await {
+        return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
+    }
+
+    let cookie = match generate_auth_cookie(&email) {
+        Ok(cookie) => cookie,
+        Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(e))),
+    };
+
     let updated_jar = jar.add(cookie);
 
-    two_fa_code_store.remove_code(&email).await
-        .map_err(|_| AuthAPIError::UnexpectedError)?;
-    
-    Ok((updated_jar, StatusCode::OK))
+    (updated_jar, Ok(()))
 }
 
 // implement the Verify2FARequest struct. See the verify-2fa route contract in step 1 for the expected JSON body.
@@ -64,4 +65,4 @@ pub struct Verify2FAResponse {
     pub message: String,
     #[serde(rename = "loginAttemptId")]
     pub login_attempt_id: String,
-}*/
+}

@@ -1,5 +1,5 @@
 use super::AuthAPIError;
-
+use color_eyre::eyre::Result;
 // The User struct should contain 3 fields. email, which is a String; 
 // password, which is also a String; and requires_2fa, which is a boolean. 
 #[derive(Clone, Debug, PartialEq)]
@@ -19,11 +19,11 @@ pub struct Email(String);
 #[derive(Clone, Debug, PartialEq)]
 pub struct Password(String);
 impl Email {
-    pub fn parse(email: String) -> Result<Email, AuthAPIError> {
+    pub fn parse(email: String) -> Result<Email> {
         if !email.is_empty() && email.contains('@') {
             Ok(Email(email))
         } else {
-            Err(AuthAPIError::InvalidCredentials)
+            Err(AuthAPIError::InvalidCredentials)?
         }
     }
 }
@@ -37,11 +37,11 @@ impl AsRef<str> for Email {
 
 
 impl Password {
-    pub fn parse(password: String) -> Result<Password, AuthAPIError> {
+    pub fn parse(password: String) -> Result<Password> {
         if password.len() >= 8 {
             Ok(Password(password))
         } else {
-            Err(AuthAPIError::InvalidCredentials)
+            Err(AuthAPIError::InvalidCredentials)?
         }
     }
 }

@@ -1,4 +1,4 @@
-/*use auth_service::{utils::constants::JWT_COOKIE_NAME};
+use auth_service::{utils::constants::JWT_COOKIE_NAME};
 use reqwest::Url;
 use crate::helpers::{get_random_email, TestApp};
 
@@ -121,4 +121,4 @@ async fn should_return_401_if_invalid_token() {
     assert_eq!(response.status().as_u16(), 401);
 
     app.clean_up().await;
-}*/
+}

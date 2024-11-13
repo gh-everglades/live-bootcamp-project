@@ -1,27 +1,26 @@
 use std::collections::HashSet;
 use crate::domain::{BannedTokenStore, BannedTokenStoreError};
-use std::sync::Mutex;
 
 
 // Create a concrete banned token store implementation that uses a HashSet to store tokens. 
 // The concrete type should be a struct called HashsetBannedTokenStore. 
 #[derive(Default)]
 pub struct HashsetBannedTokenStore {
-    pub tokens: Mutex<HashSet<String>>,
+    pub tokens: HashSet<String>,
 }
 
 // Implement the BannedTokenStore trait for HashsetBannedTokenStore.
 #[async_trait::async_trait]
 impl BannedTokenStore for HashsetBannedTokenStore {
     async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
-        let mut tokens = self.tokens.lock().map_err(|_| BannedTokenStoreError::UnexpectedError)?;
-        tokens.insert(token);
+        //let mut tokens = self.tokens.lock().map_err(|_| BannedTokenStoreError::UnexpectedError)?;
+        self.tokens.insert(token);
         Ok(())
     }
 
     async fn contains_token(&self, token: String) -> Result<bool, BannedTokenStoreError> {
-        let tokens = self.tokens.lock().map_err(|_| BannedTokenStoreError::TokenDoNotExist)?;
-        Ok(tokens.contains(&token))
+        //let tokens = self.tokens.lock().map_err(|_| BannedTokenStoreError::TokenDoNotExist)?;
+        Ok(self.tokens.contains(&token))
     }
 }
 

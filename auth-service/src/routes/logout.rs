@@ -1,8 +1,8 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse};
-use axum_extra::extract::{CookieJar};
+use axum_extra::extract::CookieJar;
 
 use crate::{
-    app_state::{AppState}, domain::AuthAPIError, utils::{auth::validate_token, constants::JWT_COOKIE_NAME}
+    app_state::AppState, domain::AuthAPIError, utils::{auth::validate_token, constants::JWT_COOKIE_NAME}
 };
 
 pub async fn logout(
@@ -21,7 +21,7 @@ pub async fn logout(
     // Validate JWT token by calling `validate_token` from the auth service.
     // If the token is valid you can ignore the returned claims for now.
     // Return AuthAPIError::InvalidToken is validation fails.
-    if validate_token(&token, state.banned_token_store.clone()).await.is_err() {
+    if validate_token(token.clone(), state.banned_token_store.clone()).await.is_err() {
         return (jar, Err(AuthAPIError::InvalidToken));
     }
 

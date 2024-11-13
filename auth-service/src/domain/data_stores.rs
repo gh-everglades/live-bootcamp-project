@@ -1,7 +1,7 @@
 use super::{Email, Password, User};
 use uuid::Uuid;
 use rand::Rng;
-use color_eyre::eyre::Report;
+use color_eyre::eyre::{eyre, Context, Report, Result};
 use thiserror::Error;
 
 
@@ -24,10 +24,19 @@ pub trait BannedTokenStore {
     async fn contains_token(&self, token: String) -> Result<bool, BannedTokenStoreError>;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Error)]
 pub enum BannedTokenStoreError {
-    TokenDoNotExist,
-    UnexpectedError,
+    #[error("Unexpected error")]
+    UnexpectedError(#[source] Report),
+}
+
+impl PartialEq for BannedTokenStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::UnexpectedError(_), Self::UnexpectedError(_))
+        )
+    }
 }
 
 // Add a UserStoreError enum to auth-service/src/domain/errors.rs
@@ -71,23 +80,35 @@ pub trait TwoFACodeStore {
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError>;
 }
 
-#[derive(Debug, PartialEq)]
+// Updated!
+#[derive(Debug, Error)]
 pub enum TwoFACodeStoreError {
+    #[error("Login Attempt ID not found")]
     LoginAttemptIdNotFound,
-    UnexpectedError,
+    #[error("Unexpected error")]
+    UnexpectedError(#[source] Report),
+}
+// New!
+impl PartialEq for TwoFACodeStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::LoginAttemptIdNotFound, Self::LoginAttemptIdNotFound)
+                | (Self::UnexpectedError(_), Self::UnexpectedError(_))
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct LoginAttemptId(String);
 
 impl LoginAttemptId {
-    pub fn parse(id: String) -> Result<Self, String> {
-        match Uuid::parse_str(&id) {
-            Ok(_) => Ok(Self(id)),
-            Err(_) => Err("Invalid UUID format".to_string()),
-        }
+    pub fn parse(id: String) -> Result<Self> { // Updated!
+        let parsed_id = uuid::Uuid::parse_str(&id).wrap_err("Invalid login attempt id")?; // Updated!
+        Ok(Self(parsed_id.to_string()))
     }
 }
+
 impl Default for LoginAttemptId {
     fn default() -> Self {
         // Use the `uuid` crate to generate a random version 4 UUID
@@ -107,18 +128,14 @@ impl AsRef<str> for LoginAttemptId {
 pub struct TwoFACode(String);
 
 impl TwoFACode {
-    pub fn parse(code: String) -> Result<Self, String> {
-        // Ensure `code` is a valid 6-digit code
-        let code_len = code.len();
-        if code_len!= 6 {
-            return Err("Invalid 2FA code length".to_string());
+    pub fn parse(code: String) -> Result<Self> { // Updated!
+        let code_as_u32 = code.parse::<u32>().wrap_err("Invalid 2FA code")?; // Updated!
+
+        if (100_000..=999_999).contains(&code_as_u32) {
+            Ok(Self(code))
+        } else {
+            Err(eyre!("Invalid 2FA code")) // Updated!
         }
-        // Ensure `code` contains only digits
-        if!code.chars().all(|c| c.is_digit(10)) {
-            return Err("Invalid 2FA code contains non-digit characters".to_string());
-        }
-        // Return the parsed TwoFACode instance if validation passes
-        Ok(Self(code))
     }
 }
 
